@@ -1,95 +1,111 @@
 import json
 import os
 import tkinter as tk
+from datetime import datetime
 from tkinter import messagebox, ttk
 
 
-class BookTrackerApp:
+class ExpenseTrackerApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Book Tracker — Трекер прочитанных книг")
-        self.root.geometry("800x550")
-        self.root.minsize(700, 450)
+        self.root.title("Expense Tracker — Трекер расходов")
+        self.root.geometry("850x650")
+        self.root.minsize(800, 500)
 
-        self.file_name = "books.json"
-        # Список для хранения всех книг (словари)
-        self.books = []
+        self.file_name = "expenses.json"
+        # Список для хранения всех расходов (словари)
+        self.expenses = []
 
-        # Инициализация графического интерфейса
+        # Инициализация интерфейса
         self.create_widgets()
 
-        # Загрузка сохраненных данных при старте программы
+        # Автоматическая загрузка данных при старте программы
         self.load_data()
 
     def create_widgets(self):
-        """Создание всех элементов GUI."""
+        """Создание элементов GUI."""
         # --- Панель ввода данных ---
         input_frame = tk.LabelFrame(
-            self.root, text=" Добавить новую книгу ", padx=15, pady=10
+            self.root, text=" Добавить новый расход ", padx=15, pady=10
         )
         input_frame.pack(fill="x", padx=15, pady=10)
 
-        tk.Label(input_frame, text="Название книги:").grid(
+        tk.Label(input_frame, text="Сумма:").grid(
             row=0, column=0, sticky="w", pady=5
         )
-        self.title_entry = tk.Entry(input_frame, width=25)
-        self.title_entry.grid(row=0, column=1, padx=10, pady=5)
+        self.amount_entry = tk.Entry(input_frame, width=20)
+        self.amount_entry.grid(row=0, column=1, padx=10, pady=5)
 
-        tk.Label(input_frame, text="Автор:").grid(
+        tk.Label(input_frame, text="Категория:").grid(
             row=0, column=2, sticky="w", pady=5
         )
-        self.author_entry = tk.Entry(input_frame, width=25)
-        self.author_entry.grid(row=0, column=3, padx=10, pady=5)
+        self.category_combobox = ttk.Combobox(
+            input_frame,
+            values=["Еда", "Транспорт", "Развлечения", "Коммунальные", "Другое"],
+            width=17,
+        )
+        self.category_combobox.grid(row=0, column=3, padx=10, pady=5)
+        self.category_combobox.set("Еда")
 
-        tk.Label(input_frame, text="Жанр:").grid(
+        tk.Label(input_frame, text="Дата (ДД.ММ.ГГГГ):").grid(
             row=1, column=0, sticky="w", pady=5
         )
-        self.genre_entry = tk.Entry(input_frame, width=25)
-        self.genre_entry.grid(row=1, column=1, padx=10, pady=5)
+        self.date_entry = tk.Entry(input_frame, width=20)
+        self.date_entry.grid(row=1, column=1, padx=10, pady=5)
+        # Подстановка текущей даты для удобства
+        self.date_entry.insert(0, datetime.now().strftime("%d.%m.%Y"))
 
-        tk.Label(input_frame, text="Количество страниц:").grid(
-            row=1, column=2, sticky="w", pady=5
-        )
-        self.pages_entry = tk.Entry(input_frame, width=25)
-        self.pages_entry.grid(row=1, column=3, padx=10, pady=5)
-
-        # Кнопка «Добавить книгу»
+        # Кнопка добавления расходов
         add_btn = tk.Button(
             input_frame,
-            text="Добавить книгу",
-            command=self.add_book,
+            text="Добавить расход",
+            command=self.add_expense,
             bg="#4CAF50",
             fg="white",
             font=("Arial", 10, "bold"),
             padx=10,
         )
-        add_btn.grid(row=0, column=4, rowspan=2, padx=15, pady=5, sticky="ns")
+        add_btn.grid(row=0, column=4, rowspan=2, padx=20, pady=5, sticky="ns")
 
-        # --- Панель фильтрации ---
+        # --- Панель фильтрации и расчета суммы за период ---
         filter_frame = tk.LabelFrame(
-            self.root, text=" Фильтрация списка ", padx=15, pady=10
+            self.root,
+            text=" Фильтрация и подсчёт суммы за период ",
+            padx=15,
+            pady=10,
         )
         filter_frame.pack(fill="x", padx=15, pady=5)
 
-        tk.Label(filter_frame, text="По жанру:").grid(row=0, column=0, sticky="w")
-        self.filter_genre_entry = tk.Entry(filter_frame, width=18)
-        self.filter_genre_entry.grid(row=0, column=1, padx=10)
-
-        tk.Label(filter_frame, text="Страниц (от):").grid(
-            row=0, column=2, sticky="w"
+        # Фильтр по категории
+        tk.Label(filter_frame, text="Категория:").grid(
+            row=0, column=0, sticky="w", pady=2
         )
-        self.filter_pages_entry = tk.Entry(filter_frame, width=10)
-        self.filter_pages_entry.grid(row=0, column=3, padx=10)
+        self.filter_cat_entry = tk.Entry(filter_frame, width=15)
+        self.filter_cat_entry.grid(row=0, column=1, padx=5, pady=2)
 
+        # Фильтр по периоду дат
+        tk.Label(filter_frame, text="Дата С (ДД.ММ.ГГГГ):").grid(
+            row=0, column=2, sticky="w", pady=2
+        )
+        self.filter_date_start = tk.Entry(filter_frame, width=12)
+        self.filter_date_start.grid(row=0, column=3, padx=5, pady=2)
+
+        tk.Label(filter_frame, text="Дата ПО (ДД.ММ.ГГГГ):").grid(
+            row=0, column=4, sticky="w", pady=2
+        )
+        self.filter_date_end = tk.Entry(filter_frame, width=12)
+        self.filter_date_end.grid(row=0, column=5, padx=5, pady=2)
+
+        # Кнопки управления фильтрами
         filter_btn = tk.Button(
             filter_frame,
-            text="Применить фильтр",
+            text="Применить",
             command=self.apply_filter,
             bg="#2196F3",
             fg="white",
         )
-        filter_btn.grid(row=0, column=4, padx=10)
+        filter_btn.grid(row=0, column=6, padx=10, pady=2)
 
         reset_btn = tk.Button(
             filter_frame,
@@ -98,28 +114,32 @@ class BookTrackerApp:
             bg="#f44336",
             fg="white",
         )
-        reset_btn.grid(row=0, column=5, padx=5)
+        reset_btn.grid(row=0, column=7, padx=5, pady=2)
 
-        # --- Таблица (Treeview) для отображения добавленных книг ---
+        # --- Строка вывода итоговой суммы ---
+        self.total_label = tk.Label(
+            self.root,
+            text="Итого расходов за выбранный период: 0.00 руб.",
+            font=("Arial", 12, "bold"),
+            fg="#E91E63",
+        )
+        self.total_label.pack(anchor="w", padx=20, pady=5)
+
+        # --- Таблица Treeview для вывода расходов ---
         table_frame = tk.Frame(self.root)
         table_frame.pack(fill="both", expand=True, padx=15, pady=10)
 
-        columns = ("title", "author", "genre", "pages")
+        columns = ("amount", "category", "date")
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings")
 
-        # Заголовки столбцов таблицы
-        self.tree.heading("title", text="Название книги")
-        self.tree.heading("author", text="Автор")
-        self.tree.heading("genre", text="Жанр")
-        self.tree.heading("pages", text="Кол-во страниц")
+        self.tree.heading("amount", text="Сумма (руб.)")
+        self.tree.heading("category", text="Категория")
+        self.tree.heading("date", text="Дата")
 
-        # Настройка размеров столбцов
-        self.tree.column("title", width=250, anchor="w")
-        self.tree.column("author", width=180, anchor="w")
-        self.tree.column("genre", width=140, anchor="w")
-        self.tree.column("pages", width=100, anchor="center")
+        self.tree.column("amount", width=150, anchor="center")
+        self.tree.column("category", width=250, anchor="w")
+        self.tree.column("date", width=150, anchor="center")
 
-        # Скроллбар для прокрутки таблицы
         scrollbar = ttk.Scrollbar(
             table_frame, orient="vertical", command=self.tree.yview
         )
@@ -129,147 +149,136 @@ class BookTrackerApp:
         scrollbar.pack(side="right", fill="y")
 
     # --- Логика валидации и добавления данных ---
-    def add_book(self):
-        """Считывает данные полей, проверяет их корректность и добавляет книгу."""
-        title = self.title_entry.get().strip()
-        author = self.author_entry.get().strip()
-        genre = self.genre_entry.get().strip()
-        pages_raw = self.pages_entry.get().strip()
+    def add_expense(self):
+        amount_raw = self.amount_entry.get().strip()
+        category = self.category_combobox.get().strip()
+        date_raw = self.date_entry.get().strip()
 
-        # 1. Валидация: проверка на обязательные пустые поля
-        if not (title and author and genre and pages_raw):
-            messagebox.showerror(
-                "Ошибка ввода", "Все поля формы должны быть заполнены!"
-            )
+        # 1. Валидация: проверка на заполненность обязательных полей
+        if not (amount_raw and category and date_raw):
+            messagebox.showerror("Ошибка ввода", "Все поля должны быть заполнены!")
             return
 
-        # 2. Валидация: проверка числового типа данных для количества страниц
+        # 2. Валидация: сумма должна быть положительным числом
         try:
-            pages = int(pages_raw)
-            if pages <= 0:
+            amount = float(amount_raw)
+            if amount <= 0:
                 raise ValueError
         except ValueError:
             messagebox.showerror(
-                "Ошибка ввода",
-                "Поле 'Количество страниц' должно быть целым положительным числом!",
+                "Ошибка ввода", "Сумма должна быть положительным числом!"
             )
             return
 
-        # Формирование словаря новой книги
-        new_book = {
-            "title": title,
-            "author": author,
-            "genre": genre,
-            "pages": pages,
-        }
+        # 3. Валидация: проверка корректности формата даты
+        try:
+            valid_date = datetime.strptime(date_raw, "%d.%m.%Y").strftime(
+                "%d.%m.%Y"
+            )
+        except ValueError:
+            messagebox.showerror(
+                "Ошибка ввода",
+                "Некорректный формат даты! Используйте шаблон: ДД.ММ.ГГГГ",
+            )
+            return
 
-        self.books.append(new_book)
+        # Формирование объекта расхода
+        new_expense = {"amount": amount, "category": category, "date": valid_date}
 
-        # Сохранение и обновление таблицы
+        self.expenses.append(new_expense)
+
+        # Сохранение и синхронизация интерфейса
         self.save_data()
-        self.update_table(self.books)
-        self.clear_input_fields()
+        self.update_ui(self.expenses)
 
-    def clear_input_fields(self):
-        """Очищает текстовые поля после успешного добавления."""
-        self.title_entry.delete(0, tk.END)
-        self.author_entry.delete(0, tk.END)
-        self.genre_entry.delete(0, tk.END)
-        self.pages_entry.delete(0, tk.END)
+        # Сброс полей ввода
+        self.amount_entry.delete(0, tk.END)
 
-    # --- Логика фильтрации списка книг ---
+    # --- Логика фильтрации и подсчета суммы за период ---
     def apply_filter(self):
-        """Фильтрует список книг по совпадению жанра и/или количеству страниц."""
-        f_genre = self.filter_genre_entry.get().strip().lower()
-        f_pages_raw = self.filter_pages_entry.get().strip()
+        f_cat = self.filter_cat_entry.get().strip().lower()
+        f_start_raw = self.filter_date_start.get().strip()
+        f_end_raw = self.filter_date_end.get().strip()
 
-        filtered_list = self.books
+        filtered_list = self.expenses
 
-        # Фильтр по жанру (частичное совпадение букв)
-        if f_genre:
+        # Фильтр по категории (частичное совпадение текста)
+        if f_cat:
             filtered_list = [
-                b for b in filtered_list if f_genre in b["genre"].lower()
+                e for e in filtered_list if f_cat in e["category"].lower()
             ]
 
-        # Фильтр по количеству страниц (вывод книг со страницами больше или равно значению)
-        if f_pages_raw:
-            try:
-                min_pages = int(f_pages_raw)
+        # Фильтр по временному диапазону (за выбранный период)
+        try:
+            if f_start_raw:
+                start_date = datetime.strptime(f_start_raw, "%d.%m.%Y")
                 filtered_list = [
-                    b for b in filtered_list if b["pages"] >= min_pages
+                    e
+                    for e in filtered_list
+                    if datetime.strptime(e["date"], "%d.%m.%Y") >= start_date
                 ]
-            except ValueError:
-                messagebox.showwarning(
-                    "Ошибка фильтра",
-                    "Критерий количества страниц должен быть целым числом!",
-                )
-                return
+            if f_end_raw:
+                end_date = datetime.strptime(f_end_raw, "%d.%m.%Y")
+                filtered_list = [
+                    e
+                    for e in filtered_list
+                    if datetime.strptime(e["date"], "%d.%m.%Y") <= end_date
+                ]
+        except ValueError:
+            messagebox.showwarning(
+                "Ошибка фильтра",
+                "Неверный формат дат в фильтре периода! Используйте ДД.ММ.ГГГГ",
+            )
+            return
 
-        self.update_table(filtered_list)
+        self.update_ui(filtered_list)
 
     def reset_filter(self):
-        """Сбрасывает установленные фильтры и возвращает полный список книг."""
-        self.filter_genre_entry.delete(0, tk.END)
-        self.filter_pages_entry.delete(0, tk.END)
-        self.update_table(self.books)
+        self.filter_cat_entry.delete(0, tk.END)
+        self.filter_date_start.delete(0, tk.END)
+        self.filter_date_end.delete(0, tk.END)
+        self.update_ui(self.expenses)
 
-    def update_table(self, data_list):
-        """Перерисовывает строки таблицы Treeview."""
-        # Очистка старых данных из интерфейса
+    def update_ui(self, data_list):
+        """Обновляет таблицу Treeview и производит автоматический пересчет итоговой суммы."""
+        # Очистка таблицы
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        # Заполнение новыми данными
-        for b in data_list:
+        total_sum = 0.0
+        # Заполнение таблицы и параллельный расчет суммы за выбранный период
+        for e in data_list:
             self.tree.insert(
                 "",
                 tk.END,
-                values=(b["title"], b["author"], b["genre"], b["pages"]),
+                values=(f"{e['amount']:.2f}", e["category"], e["date"]),
             )
+            total_sum += e["amount"]
 
-    # --- Сохранение и загрузка JSON с обработкой исключений ---
+        # Обновление итоговой текстовой метки
+        self.total_label.config(
+            text=f"Итого расходов за выбранный период: {total_sum:.2f} руб."
+        )
+
+    # --- Работа с файловой структурой JSON с обработкой исключений ---
     def save_data(self):
-        """Записывает актуальный список книг в файл JSON с перехватом ошибок ввода-вывода."""
         try:
             with open(self.file_name, "w", encoding="utf-8") as f:
-                json.dump(self.books, f, ensure_ascii=False, indent=4)
+                json.dump(self.expenses, f, ensure_ascii=False, indent=4)
         except IOError as e:
             messagebox.showerror(
                 "Ошибка сохранения",
-                f"Не удалось записать данные в файл books.json:\n{e}",
-            )
-        except Exception as e:
-            messagebox.showerror(
-                "Неизвестная ошибка", f"Произошла системная ошибка: {e}"
+                f"Не удалось сохранить данные в файл expenses.json:\n{e}",
             )
 
     def load_data(self):
-        """Загружает данные из файла JSON при старте программы с обработкой исключений."""
         if os.path.exists(self.file_name):
             try:
                 with open(self.file_name, "r", encoding="utf-8") as f:
-                    self.books = json.load(f)
-                self.update_table(self.books)
+                    self.expenses = json.load(f)
+                self.update_ui(self.expenses)
             except json.JSONDecodeError:
                 messagebox.showwarning(
-                    "Ошибка структуры данных",
-                    "Файл books.json поврежден или пуст. Создан новый список.",
+                    "Ошибка чтения",
+                    "Файл expenses.json поврежден или имеет неверную структуру. Создан чистый трекер.",
                 )
-                self.books = []
-            except PermissionError:
-                messagebox.showerror(
-                    "Ошибка доступа", "Недостаточно прав для чтения файла books.json!"
-                )
-                self.books = []
-            except Exception as e:
-                messagebox.showerror(
-                    "Ошибка загрузки", f"Не удалось загрузить данные:\n{e}"
-                )
-                self.books = []
-
-
-# --- Обязательная точка входа в приложение ---
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = BookTrackerApp(root)
-    root.mainloop()
