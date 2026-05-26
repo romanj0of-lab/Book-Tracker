@@ -14,13 +14,9 @@ class ExpenseTrackerApp:
         self.root.minsize(800, 500)
 
         self.file_name = "expenses.json"
-        # Список для хранения всех расходов (словари)
         self.expenses = []
 
-        # Инициализация интерфейса
         self.create_widgets()
-
-        # Автоматическая загрузка данных при старте программы
         self.load_data()
 
     def create_widgets(self):
@@ -53,10 +49,8 @@ class ExpenseTrackerApp:
         )
         self.date_entry = tk.Entry(input_frame, width=20)
         self.date_entry.grid(row=1, column=1, padx=10, pady=5)
-        # Подстановка текущей даты для удобства
         self.date_entry.insert(0, datetime.now().strftime("%d.%m.%Y"))
 
-        # Кнопка добавления расходов
         add_btn = tk.Button(
             input_frame,
             text="Добавить расход",
@@ -68,7 +62,7 @@ class ExpenseTrackerApp:
         )
         add_btn.grid(row=0, column=4, rowspan=2, padx=20, pady=5, sticky="ns")
 
-        # --- Панель фильтрации и расчета суммы за период ---
+        # --- Панель фильтрации ---
         filter_frame = tk.LabelFrame(
             self.root,
             text=" Фильтрация и подсчёт суммы за период ",
@@ -77,14 +71,12 @@ class ExpenseTrackerApp:
         )
         filter_frame.pack(fill="x", padx=15, pady=5)
 
-        # Фильтр по категории
         tk.Label(filter_frame, text="Категория:").grid(
             row=0, column=0, sticky="w", pady=2
         )
         self.filter_cat_entry = tk.Entry(filter_frame, width=15)
         self.filter_cat_entry.grid(row=0, column=1, padx=5, pady=2)
 
-        # Фильтр по периоду дат
         tk.Label(filter_frame, text="Дата С (ДД.ММ.ГГГГ):").grid(
             row=0, column=2, sticky="w", pady=2
         )
@@ -97,7 +89,6 @@ class ExpenseTrackerApp:
         self.filter_date_end = tk.Entry(filter_frame, width=12)
         self.filter_date_end.grid(row=0, column=5, padx=5, pady=2)
 
-        # Кнопки управления фильтрами
         filter_btn = tk.Button(
             filter_frame,
             text="Применить",
@@ -116,7 +107,6 @@ class ExpenseTrackerApp:
         )
         reset_btn.grid(row=0, column=7, padx=5, pady=2)
 
-        # --- Строка вывода итоговой суммы ---
         self.total_label = tk.Label(
             self.root,
             text="Итого расходов за выбранный период: 0.00 руб.",
@@ -125,7 +115,7 @@ class ExpenseTrackerApp:
         )
         self.total_label.pack(anchor="w", padx=20, pady=5)
 
-        # --- Таблица Treeview для вывода расходов ---
+        # --- Таблица Вывода ---
         table_frame = tk.Frame(self.root)
         table_frame.pack(fill="both", expand=True, padx=15, pady=10)
 
@@ -148,18 +138,15 @@ class ExpenseTrackerApp:
         self.tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-    # --- Логика валидации и добавления данных ---
     def add_expense(self):
         amount_raw = self.amount_entry.get().strip()
         category = self.category_combobox.get().strip()
         date_raw = self.date_entry.get().strip()
 
-        # 1. Валидация: проверка на заполненность обязательных полей
         if not (amount_raw and category and date_raw):
             messagebox.showerror("Ошибка ввода", "Все поля должны быть заполнены!")
             return
 
-        # 2. Валидация: сумма должна быть положительным числом
         try:
             amount = float(amount_raw)
             if amount <= 0:
@@ -170,7 +157,6 @@ class ExpenseTrackerApp:
             )
             return
 
-        # 3. Валидация: проверка корректности формата даты
         try:
             valid_date = datetime.strptime(date_raw, "%d.%m.%Y").strftime(
                 "%d.%m.%Y"
@@ -182,19 +168,12 @@ class ExpenseTrackerApp:
             )
             return
 
-        # Формирование объекта расхода
         new_expense = {"amount": amount, "category": category, "date": valid_date}
-
         self.expenses.append(new_expense)
-
-        # Сохранение и синхронизация интерфейса
         self.save_data()
         self.update_ui(self.expenses)
-
-        # Сброс полей ввода
         self.amount_entry.delete(0, tk.END)
 
-    # --- Логика фильтрации и подсчета суммы за период ---
     def apply_filter(self):
         f_cat = self.filter_cat_entry.get().strip().lower()
         f_start_raw = self.filter_date_start.get().strip()
@@ -202,13 +181,11 @@ class ExpenseTrackerApp:
 
         filtered_list = self.expenses
 
-        # Фильтр по категории (частичное совпадение текста)
         if f_cat:
             filtered_list = [
                 e for e in filtered_list if f_cat in e["category"].lower()
             ]
 
-        # Фильтр по временному диапазону (за выбранный период)
         try:
             if f_start_raw:
                 start_date = datetime.strptime(f_start_raw, "%d.%m.%Y")
@@ -240,13 +217,10 @@ class ExpenseTrackerApp:
         self.update_ui(self.expenses)
 
     def update_ui(self, data_list):
-        """Обновляет таблицу Treeview и производит автоматический пересчет итоговой суммы."""
-        # Очистка таблицы
         for item in self.tree.get_children():
             self.tree.delete(item)
 
         total_sum = 0.0
-        # Заполнение таблицы и параллельный расчет суммы за выбранный период
         for e in data_list:
             self.tree.insert(
                 "",
@@ -255,12 +229,10 @@ class ExpenseTrackerApp:
             )
             total_sum += e["amount"]
 
-        # Обновление итоговой текстовой метки
         self.total_label.config(
             text=f"Итого расходов за выбранный период: {total_sum:.2f} руб."
         )
 
-    # --- Работа с файловой структурой JSON с обработкой исключений ---
     def save_data(self):
         try:
             with open(self.file_name, "w", encoding="utf-8") as f:
@@ -277,8 +249,12 @@ class ExpenseTrackerApp:
                 with open(self.file_name, "r", encoding="utf-8") as f:
                     self.expenses = json.load(f)
                 self.update_ui(self.expenses)
-            except json.JSONDecodeError:
-                messagebox.showwarning(
-                    "Ошибка чтения",
-                    "Файл expenses.json поврежден или имеет неверную структуру. Создан чистый трекер.",
-                )
+            except Exception:
+                self.expenses = []
+
+
+# --- Обязательная точка входа в приложение ---
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ExpenseTrackerApp(root)
+    root.mainloop()
